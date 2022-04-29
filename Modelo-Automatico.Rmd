@@ -1,0 +1,1096 @@
+---
+title: "Investimentos Brasil -  "
+author: "Secretaria de Comércio Exterior e Assuntos Econômicos (SCAEC)"
+date: " `r format(Sys.time(), '%d/%m/%Y')` " 
+output: 
+  pdf_document:
+      latex_engine: lualatex
+      toc: true
+      toc_depth: 3
+      number_sections: true
+organization: 
+toc-title: "Índice"
+header-includes:
+- \usepackage{fancyhdr}
+- \usepackage{lscape}
+- \usepackage{pdflscape}
+- \usepackage{fancyhdr}
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{graphicx}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{wrapfig}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage[normalem]{ulem}
+- \usepackage{xcolor}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+- \pagestyle{fancy}
+tables: yes
+graphics: yes
+---
+
+```{r, echo=FALSE, message=FALSE}
+library(tidyverse)
+library(tinytex)
+library(rbcb)
+library(comerciobr)
+library(lubridate)
+library(httr2)
+library(DT)
+library(tidyr)
+library(dplyr)
+library(stringr)
+library(zoo)
+library(ggplot2)
+library(RColorBrewer)
+library(shades)
+library(scales)
+library(qpdf)
+library(flexdashboard)
+library(shiny)
+library(kableExtra)
+library(ggthemes)
+library(rccdates)
+library(ggrepel)
+library(readxl)
+
+
+``` 
+
+\newpage
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8, message=FALSE,warning = FALSE}
+país <- "Alemanha"
+```
+
+---
+title: "Investimentos Brasil - `r país` "
+---
+
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8, message=FALSE,warning = FALSE, results='hide'}
+
+
+# Baixa a Planilha
+httr::GET("https://www.bcb.gov.br/content/estatisticas/Documents/Tabelas_especiais/TabelasCompletasPosicaoIDE.xlsx",
+          config = httr::config(ssl_verifypeer = F),
+          httr::write_disk(here::here("data-raw", "TabelasCompletasPosicaoIDE.xlsx"), overwrite = T))
+
+# Lista de países IDE
+lista_paises_IDE <- c("Ilhas Virgens Britânicas", "Panamá", "Bahamas", "Suíça", "Ilhas Cayman",
+                      "Estados Unidos", "Luxemburgo", "Liechtenstein", "Portugal", "Belize",
+                      "Uruguai", "Reino Unido", "Nova Zelândia", "São Vicente e Granadinas", "Ilhas Jersey",
+                      "Alemanha", "Bermudas","Israel", "Países Baixos",
+                      "França", "Cingapura", "Curaçao", "Canadá",
+                      "Guernesey", "Anguila", "Itália", "Costa Rica",
+                      "Paraguai", "Ilha de Man", "Ilhas Marshall", "Ilhas Virgens (EUA)", "Maurício",
+                      "Mônaco", "Hong Kong", "Ilhas São Cristóvão e Neves", "Andorra",
+                      "Bélgica", "Líbano", "Emirados Árabes Unidos", "México",
+                      "Rússia", "Samoa", "Porto Rico", "Argentina",
+                      "Antigua e Barbuda", "Coréia do Sul", "Malta",
+                      "Áustria", "Espanha","Chile",
+                      "Colômbia","Peru", "Hungria", "República Dominicana","Venezuela",
+                      "Suécia","Angola","Gibraltar","Ilhas Turcas e Caicos",
+                      "Irlanda", "Seychelles", "Austrália","China", "Japão",
+                      "Guatemala", "Cuba", "Bolívia", "África do Sul",
+                      "Ilhas Menores Distantes dos EUA", "Tailândia", "Equador", "Aruba","Turquia",
+                      "Gana", "El Salvador","Noruega","Santa Lúcia", "Índia",
+                      "Moçambique", "Honduras", "Grécia","Dinamarca", "Taiwan",
+                      "Egito","Polônia", "Romênia", "República Tcheca", "Ilhas Lebuan",
+                      "Antilhas Holandesas", "Bahrein", "Eslováquia", "Eslovênia","Zâmbia",
+                      "Barbados","Argélia","Malásia","Marrocos", "Nigéria",
+                      "Trinidad e Tobago","Finlândia","Indonésia","Congo","Chipre",
+                      "Guiné Equatorial","Cabo Verde","Macau", "Demais","Não alocado")
+
+lista_paises_IDE_Por_Setor <- c("Países Baixos", "Ilhas Cayman", "Ilhas Virgens Britânicas",
+                            "Bahamas", "Estados Unidos", "Luxemburgo", "Áustria", "Panamá", "Espanha", "Reino Unido", 
+                            "Chile", "Bermudas", "Uruguai", "Portugal", "Argentina", "Colômbia", "França", "Bélgica",
+                            "Suíça", "Paraguai", "México", "Canadá", "Peru", "Hungria", "República Dominicana",
+                            "Venezuela", "Suécia", "Curaçao", "Angola", "Itália", "Gibraltar", "Belize", "Alemanha", 
+                            "Ilhas Turcas e Caicos", "Nova Zelândia", "Liechtenstein", "Ilhas Virgens (EUA)", "Irlanda",
+                            "Seychelles", "Austrália", "China", "Japão", "Anguila", "São Vicente e Granadinas", 
+                            "Ilhas Jersey", "Ilhas São Cristóvão e Neves", "Cingapura", "Hong Kong", "Guatemala",
+                            "Guernesey", "Cuba", "Bolívia", "África do Sul", "Costa Rica", "Israel", "Malta", 
+                            "Ilhas Menores Distantes dos EUA", "Tailândia", "Equador", "Aruba", "Ilhas Marshall",
+                            "Maurício", "Ilha de Man", "Turquia", "Antigua e Barbuda", "Gana", "El Salvador", 
+                            "Emirados Árabes Unidos", "Líbano", "Noruega", "Santa Lúcia", "Índia", "Moçambique",
+                            "Honduras", "Grécia", "Dinamarca", "Coréia do Sul")
+
+
+
+# Realiza leitura da página 3 da Planilha IDE 
+PAG_IDE_Invest_Imediato <- read_excel("data-raw/TabelasCompletasPosicaoIDE.xlsx",
+                                        sheet = "3", skip = 4, col_types = c("text", "numeric", "numeric",
+                                                                             "numeric", "numeric", "numeric",
+                                                                             "numeric", "numeric", "numeric", 
+                                                                             "numeric", "numeric", "numeric", 
+                                                                             "numeric", "numeric", "numeric", 
+                                                                             "numeric", "numeric", "numeric",
+                                                                             "numeric", "numeric", "numeric", 
+                                                                             "numeric", "numeric", "numeric",
+                                                                             "numeric", "numeric", "numeric",
+                                                                             "numeric", "numeric"))
+
+PAG_IDE_Invest_Imediato <- rename(PAG_IDE_Invest_Imediato, "Pais" = "Discriminação")
+
+# Transforma a lista de países da Planilha IDE em um df 
+df_paises_IDE <- data.frame(lista_paises_IDE)
+
+
+
+
+
+# Lista com os anos até 2020
+anos <- c("2010", "2011", "2012", "2013", "2014", "2015",
+          "2016", "2017", "2018", "2019", "2020")
+
+
+
+
+# Lista com os anos até 2019
+anos_ate19 <- c("2010", "2011", "2012", "2013", "2014", "2015",
+                "2016", "2017", "2018", "2019")
+
+
+
+
+
+#Filtra as páginas do df com Nome do país, ano e valor
+DF_IDE_Invest_Imediato <- PAG_IDE_Invest_Imediato %>%
+  select("Pais", anos)%>%
+  pivot_longer(cols = anos, names_to = "Ano", values_to = "IDE_Invest_Imediato")
+
+
+
+
+# Omite os NA's no df 
+DF_IDE_Invest_Imediato <- na.omit(DF_IDE_Invest_Imediato)
+
+# Organiza o df por ordem alfabética
+DF_IDE_Invest_Imediato <- arrange_all(DF_IDE_Invest_Imediato)
+
+
+
+
+
+# ----------------------------------------------- // -----------------------------------------------
+
+
+
+
+# Realiza leitura da página 9 da Planilha IDE 
+PAG_IDE_Oper_Intercomp <- read_excel("data-raw/TabelasCompletasPosicaoIDE.xlsx",
+                                 sheet = "9", skip = 4, col_types = c("text", "numeric", "numeric",
+                                                                      "numeric", "numeric", "numeric",
+                                                                      "numeric", "numeric", "numeric", 
+                                                                      "numeric", "numeric", "numeric", 
+                                                                      "numeric", "numeric", "numeric", 
+                                                                      "numeric", "numeric", "numeric",
+                                                                      "numeric", "numeric", "numeric", 
+                                                                      "numeric", "numeric", "numeric",
+                                                                      "numeric", "numeric", "numeric",
+                                                                      "numeric", "numeric"))
+
+
+PAG_IDE_Oper_Intercomp <- rename(PAG_IDE_Oper_Intercomp, "Pais" = "Discriminação")
+
+
+#Filtra as páginas do df com Nome do país, ano e valor
+DF_IDE_Oper_Intercomp <- PAG_IDE_Oper_Intercomp %>%
+  select("Pais", anos)%>%
+  pivot_longer(cols = anos, names_to = "Ano", values_to = "IDE_Oper_Intercomp")
+
+
+
+
+# Omite os NA's no df 
+DF_IDE_Oper_Intercomp <- na.omit(DF_IDE_Oper_Intercomp)
+
+# Organiza o df por ordem alfabética
+DF_IDE_Oper_Intercomp <- arrange_all(DF_IDE_Oper_Intercomp)
+
+
+
+
+
+# ----------------------------------------------- // -----------------------------------------------
+
+
+
+
+# Realiza leitura da página 11 da Planilha IDE 
+PAG_IDE_Acoes <- read_excel("data-raw/TabelasCompletasPosicaoIDE.xlsx",
+                        sheet = "11", skip = 4, col_types = c("text", "numeric", "numeric",
+                                                              "numeric", "numeric", "numeric",
+                                                              "numeric", "numeric", "numeric", 
+                                                              "numeric", "numeric", "numeric", 
+                                                              "numeric", "numeric", "numeric", 
+                                                              "numeric", "numeric", "numeric",
+                                                              "numeric", "numeric", "numeric", 
+                                                              "numeric", "numeric", "numeric",
+                                                              "numeric", "numeric", "numeric",
+                                                              "numeric", "numeric"))
+
+PAG_IDE_Acoes <- rename(PAG_IDE_Acoes, "Pais" = "Discriminação")
+
+
+#Filtra as páginas do df com Nome do país, ano e valor
+DF_IDE_Acoes <- PAG_IDE_Acoes %>%
+  select("Pais", anos)%>%
+  pivot_longer(cols = anos, names_to = "Ano", values_to = "IDE_Acoes")
+
+
+
+
+# Omite os NA's no df
+DF_IDE_Acoes <- na.omit(DF_IDE_Acoes)
+
+# Organiza o df por ordem alfabética
+DF_IDE_Acoes <- arrange_all(DF_IDE_Acoes)
+
+
+
+
+
+# ----------------------------------------------- // -----------------------------------------------
+
+
+
+
+# Realiza leitura da página 13 da Planilha IDE
+PAG_IDE_RF_Longo_Prazo <- read_excel("data-raw/TabelasCompletasPosicaoIDE.xlsx",
+                                 sheet = "13", skip = 4, col_types = c("text", "numeric", "numeric",
+                                                                       "numeric", "numeric", "numeric",
+                                                                       "numeric", "numeric", "numeric", 
+                                                                       "numeric", "numeric", "numeric", 
+                                                                       "numeric", "numeric", "numeric", 
+                                                                       "numeric", "numeric", "numeric",
+                                                                       "numeric", "numeric", "numeric", 
+                                                                       "numeric", "numeric", "numeric",
+                                                                       "numeric", "numeric", "numeric",
+                                                                       "numeric", "numeric"))
+
+PAG_IDE_RF_Longo_Prazo <- rename(PAG_IDE_RF_Longo_Prazo, "Pais" = "Discriminação")
+
+
+#Filtra as páginas do df com Nome do país, ano e valor
+DF_IDE_RF_Longo_Prazo <- PAG_IDE_RF_Longo_Prazo %>%
+  select("Pais", anos)%>%
+  pivot_longer(cols = anos, names_to = "Ano", values_to = "IDE_RF_Longo_Prazo")
+
+
+
+
+# Omite os NA's no df
+DF_IDE_RF_Longo_Prazo <- na.omit(DF_IDE_RF_Longo_Prazo)
+
+# Organiza o df por ordem alfabética
+DF_IDE_RF_Longo_Prazo <- arrange_all(DF_IDE_RF_Longo_Prazo)
+
+
+
+
+# ----------------------------------------------- // -----------------------------------------------
+
+
+
+# Realiza leitura da página 12 da Planilha IDE
+PAG_IDE_RF_Curto_Prazo <- read_excel("data-raw/TabelasCompletasPosicaoIDE.xlsx",
+                                 sheet = "12", skip = 4, col_types = c("text", "numeric", "numeric",
+                                                                       "numeric", "numeric", "numeric",
+                                                                       "numeric", "numeric", "numeric", 
+                                                                       "numeric", "numeric", "numeric", 
+                                                                       "numeric", "numeric", "numeric", 
+                                                                       "numeric", "numeric", "numeric",
+                                                                       "numeric", "numeric", "numeric", 
+                                                                       "numeric", "numeric", "numeric",
+                                                                       "numeric", "numeric", "numeric",
+                                                                       "numeric", "numeric"))
+
+PAG_IDE_RF_Curto_Prazo <- rename(PAG_IDE_RF_Curto_Prazo, "Pais" = "Discriminação")
+
+
+#Filtra as páginas do df com Nome do país, ano e valor
+DF_IDE_RF_Curto_Prazo <- PAG_IDE_RF_Curto_Prazo %>%
+  select("Pais", anos)%>%
+  pivot_longer(cols = anos, names_to = "Ano", values_to = "IDE_RF_Curto_Prazo")
+
+
+
+
+# Omite os NA's no df
+DF_IDE_RF_Curto_Prazo <- na.omit(DF_IDE_RF_Curto_Prazo)
+
+# Organiza o df por ordem alfabética
+DF_IDE_RF_Curto_Prazo <- arrange_all(DF_IDE_RF_Curto_Prazo)
+
+
+
+
+
+# ----------------------------------------------- // -----------------------------------------------
+
+
+
+
+# Realiza leitura da página 14 da Planilha IDE
+PAG_IDE_Moedas_19 <- TabelasCompletasPosicaoIDE <- read_excel("data-raw/TabelasCompletasPosicaoIDE.xlsx", 
+                                                              sheet = "14", skip = 4, col_types = c("text", "numeric", 
+                                                                                          "numeric", "numeric", "numeric", 
+                                                                                          "numeric", "numeric", "numeric", "numeric", 
+                                                                                          "numeric", "numeric", "numeric", 
+                                                                                          "numeric", "numeric", "numeric", 
+                                                                                          "numeric", "numeric", "numeric", 
+                                                                                          "numeric", "numeric", "numeric", 
+                                                                                          "numeric", "numeric", "numeric", 
+                                                                                          "numeric", "numeric", "numeric"))
+
+PAG_IDE_Moedas_19 <- rename(PAG_IDE_Moedas_19, "Pais" = "Discriminação")
+
+
+
+#Filtra as páginas do df com Nome do país, ano e valor
+DF_IDE_Moedas_19 <- PAG_IDE_Moedas_19 %>%
+  select("Pais", anos_ate19)%>%
+  pivot_longer(cols = anos_ate19, names_to = "Ano", values_to = "IDE_Moedas_19")
+
+
+
+
+# Omite os NA's no df
+DF_IDE_Moedas_19 <- na.omit(DF_IDE_Moedas_19)
+
+# Organiza o df por ordem alfabética
+DF_IDE_Moedas_19 <- arrange_all(DF_IDE_Moedas_19)
+
+
+
+
+
+# ----------------------------------------------- // -----------------------------------------------
+
+
+
+
+# Realiza leitura da página 15 da Planilha IDE
+PAG_IDE_Moedas_20 <- read_excel("data-raw/TabelasCompletasPosicaoIDE.xlsx",
+                            sheet = "15", skip = 4, col_types = c("text", "numeric", 
+                                                                  "numeric"))
+
+
+PAG_IDE_Moedas_20 <- rename(PAG_IDE_Moedas_20, "Pais" = "Discriminação")
+
+#Filtra as páginas do df com Nome do país, ano e valor
+DF_IDE_Moedas_20 <- PAG_IDE_Moedas_20 %>%
+  select("Pais", "2020")%>%
+  pivot_longer(cols = "2020", names_to = "Ano", values_to = "IDE_Moedas_20")
+
+
+
+
+# Omite os NA's no df
+DF_IDE_Moedas_20 <- na.omit(DF_IDE_Moedas_20)
+
+# Organiza o df por ordem alfabética
+DF_IDE_Moedas_20 <- arrange_all(DF_IDE_Moedas_20)
+
+
+
+
+
+# ----------------------------------------------- // -----------------------------------------------
+
+
+
+# Realiza leitura da página 16 da Planilha IDE
+PAG_IDE_Imoveis_19 <- read_excel("data-raw/TabelasCompletasPosicaoIDE.xlsx",
+                             sheet = "16", skip = 4, col_types = c("text", "numeric", 
+                                                                   "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                   "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                   "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                   "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                   "numeric", "numeric", "numeric", "numeric", "numeric"))
+
+PAG_IDE_Imoveis_19 <- rename(PAG_IDE_Imoveis_19, "Pais" = "Discriminação")
+
+
+#Filtra as páginas do df com Nome do país, ano e valor
+DF_IDE_Imoveis_19 <- PAG_IDE_Imoveis_19 %>%
+  select("Pais", anos_ate19)%>%
+  pivot_longer(cols = anos_ate19, names_to = "Ano", values_to = "IDE_Imoveis_19")
+
+
+
+# Omite os NA's no df
+DF_IDE_Imoveis_19 <- na.omit(DF_IDE_Imoveis_19)
+
+# Organiza o df por ordem alfabética
+DF_IDE_Imoveis_19 <- arrange_all(DF_IDE_Imoveis_19)
+
+
+
+
+
+# ----------------------------------------------- // -----------------------------------------------
+
+
+
+
+# Realiza leitura da página 17 da Planilha IDE
+PAG_IDE_Imoveis_20 <- read_excel("data-raw/TabelasCompletasPosicaoIDE.xlsx",
+                             sheet = "17", skip = 4, col_types = c("text", "numeric", 
+                                                                   "numeric"))
+PAG_IDE_Imoveis_20 <- rename(PAG_IDE_Imoveis_20, "Pais" = "Discriminação")
+
+
+
+#Filtra as páginas do df com Nome do país, ano e valor
+DF_IDE_Imoveis_20 <- PAG_IDE_Imoveis_20 %>%
+  select("Pais", "2020")%>%
+  pivot_longer(cols = "2020", names_to = "Ano", values_to = "IDE_Imoveis_20")
+
+
+
+
+# Omite os NA's no df
+DF_IDE_Imoveis_20 <- na.omit(DF_IDE_Imoveis_20)
+
+# Organiza o df por ordem alfabética
+DF_IDE_Imoveis_20 <- arrange_all(DF_IDE_Imoveis_20)
+
+
+
+
+# Realiza um Full_Join colocando APENAS UMA COLUNA para o país e o ano e colocando os valores dos outros dataframe's em colunas separadas 
+DF_Geral <- full_join(DF_IDE_Invest_Imediato, DF_IDE_Oper_Intercomp, by = c("Pais", "Ano"))
+
+DF_Geral <- full_join(DF_Geral, DF_IDE_Acoes, by = c("Pais", "Ano"))
+
+DF_Geral <- full_join(DF_Geral, DF_IDE_RF_Longo_Prazo, by = c("Pais", "Ano"))
+
+DF_Geral <- full_join(DF_Geral, DF_IDE_RF_Curto_Prazo, by = c("Pais", "Ano"))
+
+# Transforma NA em 0 nas respectivas respectivas colunas
+DF_Geral$IDE_RF_Longo_Prazo[is.na(DF_Geral$IDE_RF_Longo_Prazo)] <- 0
+DF_Geral$IDE_RF_Curto_Prazo[is.na(DF_Geral$IDE_RF_Curto_Prazo)] <- 0
+DF_Geral$IDE_RF_Curto_Prazo[is.na(DF_Geral$IDE_Acoes)] <- 0
+
+
+# Realiza o somatório para criar a coluna Investimento em Carteira
+DF_Geral <- mutate(DF_Geral, Invest_Em_Carteira = IDE_RF_Longo_Prazo + IDE_RF_Curto_Prazo + IDE_Acoes)
+
+DF_IDE_Moedas_20 <- full_join(DF_IDE_Moedas_19, DF_IDE_Moedas_20, by = c("Pais", "Ano"))
+DF_IDE_Moedas_20 <- mutate_all(DF_IDE_Moedas_20, replace_na, 0)
+DF_IDE_Moedas_20$IDE_Moedas_19 <- ifelse(DF_IDE_Moedas_20$IDE_Moedas_19 == 0, DF_IDE_Moedas_20$IDE_Moedas_20 ,DF_IDE_Moedas_20$IDE_Moedas_19)
+DF_IDE_Moedas_20$IDE_Moedas_20 <- NULL
+
+
+
+
+DF_Geral <- full_join(DF_Geral, DF_IDE_Moedas_20, by = c("Pais", "Ano"))
+DF_Geral <- rename(DF_Geral, "IDE_Moedas" = "IDE_Moedas_19")
+
+# ------------------------ // --------------------------------------------
+
+DF_IDE_Imoveis_20 <- full_join(DF_IDE_Imoveis_19, DF_IDE_Imoveis_20, by = c("Pais", "Ano"))
+DF_IDE_Imoveis_20 <- mutate_all(DF_IDE_Imoveis_20, replace_na, 0)
+DF_IDE_Imoveis_20$IDE_Imoveis_19 <- ifelse(DF_IDE_Imoveis_20$IDE_Imoveis_19 == 0, DF_IDE_Imoveis_20$IDE_Imoveis_20 ,DF_IDE_Imoveis_20$IDE_Imoveis_19)
+DF_IDE_Imoveis_20$IDE_Imoveis_20 <- NULL
+
+
+
+
+
+DF_Geral <- full_join(DF_Geral, DF_IDE_Imoveis_20, by = c("Pais", "Ano"))
+DF_Geral <- rename(DF_Geral, "IDE_Imoveis" = "IDE_Imoveis_19")
+
+
+PAG_IDE_Por_Setor <- read_xlsx("data-raw/TabelasCompletasPosicaoIDE.xlsx",
+                                             sheet = "18", range = "A5:BZ24", col_types = "text")
+
+DF_IDE_Por_Setor  <- PAG_IDE_Por_Setor %>%
+  select("ANO: 2020", lista_paises_IDE_Por_Setor)%>%
+  pivot_longer(cols = lista_paises_IDE_Por_Setor, names_to = "Pais", values_to = "IDE_Por_Setor")
+
+DF_IDE_Por_Setor <- na.omit(DF_IDE_Por_Setor)
+
+# Organiza o df por ordem alfabética
+DF_IDE_Por_Setor <- arrange_all(DF_IDE_Por_Setor)
+
+
+# Baixa a Planilha
+
+httr::GET("https://www.bcb.gov.br/content/estatisticas/Documents/Tabelas_especiais/TabelasCompletasPosicaoIDP.xlsx",
+          config = httr::config(ssl_verifypeer = F),
+          httr::write_disk(here::here("data-raw", "TabelasCompletasPosicaoIDP.xlsx"), overwrite = T))
+
+# Carrega a página 5 da Planilha IDP
+PAG_IDP_Invest_Imediato <- read_xlsx("data-raw/TabelasCompletasPosicaoIDP.xlsx",
+                      sheet = "5", skip = 4, col_types = c("text", "numeric", 
+                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                           "numeric")
+)
+
+# Carrega a página 6 da Planilha IDP
+PAG_IDP_Control_Final <- read_xlsx("data-raw/TabelasCompletasPosicaoIDP.xlsx",
+                      sheet = "6", skip = 4, col_types = c("text", "numeric", 
+                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                           "numeric")
+)
+
+# Carrega a página 7 da Planilha IDP
+PAG_IDP_Oper_Intercomp <- read_xlsx("data-raw/TabelasCompletasPosicaoIDP.xlsx",
+                      sheet = "7", skip = 4, col_types = c("text", "numeric", 
+                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                           "numeric")
+)
+
+
+# Lista de países IDP
+lista_paises_IDP <- c("Países Baixos", "Estados Unidos", "Espanha", "Luxemburgo", "França", "Reino Unido",
+                      "Japão", "Canadá", "Chile", "Ilhas Virgens Britânicas", "Suíça", "Alemanha", "Noruega",
+                      "Cingapura", "Itália", "México", "Ilhas Cayman", "Bermudas", "Coréia do Sul", "Ilhas Jersey",
+                      "Bélgica", "Suécia", "Bahamas", "Portugal", "Uruguai", "Irlanda", "Austrália", "Panamá", "Colômbia",
+                      "Dinamarca", "China", "Curaçao", "Argentina", "Áustria", "Finlândia", "Hong Kong", "Malta",
+                      "Israel", "Chipre", "Emirados Árabes Unidos", "África do Sul", "Nova Zelândia", "Maurício", "Peru",
+                      "Angola", "Barbados", "Índia", "Uruguai", "Indonésia", "Israel", "Bahrein", "Tailândia", "Taiwan",
+                      "Guernesey", "Catar", "Angola", "Rússia", "Ilha de Man", "Suíça", "Samoa", "Hungria", "Mônaco",
+                      "São Vicente e Granadinas", "Eslováquia", "Aruba", "Trinidad e Tobago", "Demais")
+
+lista_paises_IDP_Setor_Inv_Imed <- c("Países Baixos", "Estados Unidos", "Espanha", "Luxemburgo", "França",
+                       "Reino Unido","Japão", "Canadá", "Chile", "Ilhas Virgens Britânicas",
+                       "Suíça", "Alemanha", "Noruega","Cingapura", "Itália", "México", 
+                       "Ilhas Cayman", "Bermudas", "Coréia do Sul", "Ilhas Jersey",
+                        "Bélgica", "Suécia", "Bahamas", "Portugal", "Uruguai", "Irlanda",
+                       "Dinamarca", "China", "Curaçao", "Argentina", "Áustria", "Finlândia")
+
+lista_paises_IDP_Setor_Control_Final <- c("Estados Unidos", "Espanha", "França", "Bélgica",
+                                          "Reino Unido", "China", "Países Baixos", "Japão",
+                                          "Alemanha", "Suíça", "Luxemburgo", "Canadá", "Brasil",
+                                          "Itália", "Ilhas Cayman", "Portugal", "Cingapura", "Noruega", 
+                                          "Bermudas", "México", "Coréia do Sul", "Chile", "Suécia", 
+                                          "Irlanda", "Austrália", "Ilhas Virgens Britânicas", "Índia",
+                                          "Colômbia", "África do Sul", "Uruguai", "Argentina", "Áustria",
+                                          "Panamá", "Dinamarca", "Indonésia")
+
+# Transforma a lista de países da Planilha IDP em um df 
+df_paises_IDP <- data.frame(lista_paises_IDP)
+
+# Lista com os anos
+anos <- c("2010", "2011", "2012", "2013", "2014", "2015",
+          "2016", "2017", "2018", "2019", "2020")
+
+PAG_IDP_Invest_Imediato <- rename(PAG_IDP_Invest_Imediato, "Pais" = "Discriminação")
+PAG_IDP_Control_Final <- rename(PAG_IDP_Control_Final, "Pais" = "Discriminação")
+PAG_IDP_Oper_Intercomp <- rename(PAG_IDP_Oper_Intercomp,  "Pais" = "Discriminação")
+
+#Filtra as páginas do df
+DF_IDP_Invest_Imediato <- PAG_IDP_Invest_Imediato %>%
+  select("Pais", anos)%>%
+  pivot_longer(cols = anos, names_to = "Ano", values_to = "IDP_Invest_Imediato")
+
+
+# Omite os NA's no df 
+DF_IDP_Invest_Imediato <- na.omit(DF_IDP_Invest_Imediato)
+
+# Organiza o df por ordem alfabética
+DF_IDP_Invest_Imediato <- arrange_all(DF_IDP_Invest_Imediato)
+
+#----------------------------------------  // ---------------------------------------- 
+
+#Página 6
+DF_IDP_Control_Final <- PAG_IDP_Control_Final %>%
+  select("Pais", anos)%>%
+  pivot_longer(cols = anos, names_to = "Ano", values_to = "IDP_Control_Final")
+
+
+
+
+DF_IDP_Control_Final <- na.omit(DF_IDP_Control_Final)
+DF_IDP_Control_Final <- arrange_all(DF_IDP_Control_Final)
+
+#Página 7
+DF_IDP_Oper_Intercomp <- PAG_IDP_Oper_Intercomp %>%
+  select("Pais", anos)%>%
+  pivot_longer(cols = anos, names_to = "Ano", values_to = "IDP_Oper_Intercomp")
+
+
+
+DF_IDP_Oper_Intercomp <- na.omit(DF_IDP_Oper_Intercomp)
+DF_IDP_Oper_Intercomp <- arrange_all(DF_IDP_Oper_Intercomp)
+
+#-------------------------------- // -------------------------------------------
+
+DF_Geral <- full_join(DF_Geral,DF_IDP_Invest_Imediato, by = c("Pais", "Ano"))
+DF_Geral <- full_join(DF_Geral, DF_IDP_Control_Final, by = c("Pais", "Ano"))
+DF_Geral <- full_join(DF_Geral,DF_IDP_Oper_Intercomp, by = c("Pais", "Ano"))
+
+# Quadro de pizza 
+
+PAG_IDP_Por_Setor_Inv_Imed <- read_xlsx("data-raw/TabelasCompletasPosicaoIDP.xlsx",
+                               sheet = "13", range = "A5:AJ20", col_types = c("text", "numeric", 
+                                                                              "numeric", "numeric", "numeric", "numeric", 
+                                                                              "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                              "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                              "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                              "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                              "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                              "numeric", "numeric", "numeric", "numeric", "numeric")
+)
+
+anos_extenso <- c("ANO: 2020", "ANO: 2019", "ANO: 2018", "ANO: 2017", "ANO: 2016",
+                  "ANO: 2015", "ANO: 2014", "ANO: 2013", "ANO: 2012", "ANO: 2011", "ANO: 2010")
+
+DF_IDP_Por_Setor_Inv_Imed  <- PAG_IDP_Por_Setor_Inv_Imed %>%
+  select("ANO: 2020", lista_paises_IDP_Setor_Inv_Imed)%>%
+  pivot_longer(cols = lista_paises_IDP_Setor_Inv_Imed, names_to = "Pais", values_to = "IDP_Por_Setor_Inv_Imed ")
+
+DF_IDP_Por_Setor_Inv_Imed <- na.omit(DF_IDP_Por_Setor_Inv_Imed)
+
+# Organiza o df por ordem alfabética
+DF_IDP_Por_Setor_Inv_Imed <- arrange_all(DF_IDP_Por_Setor_Inv_Imed)
+
+#-------------------------------- // -------------------------------------------
+
+PAG_IDP_Por_Setor_Control_Final <- read_xlsx("data-raw/TabelasCompletasPosicaoIDP.xlsx",
+                                        sheet = "14", range = "A5:AJ20", col_types = c("text", "numeric", 
+                                                                               "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                               "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                               "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                               "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                               "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                               "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                                                               "numeric", "numeric", "numeric", "numeric")
+)
+
+DF_IDP_Por_Setor_Control_Final  <- PAG_IDP_Por_Setor_Control_Final %>%
+  select("ANO: 2020", lista_paises_IDP_Setor_Control_Final)%>%
+  pivot_longer(cols = lista_paises_IDP_Setor_Control_Final, names_to = "Pais", values_to = "IDP_Setor_Control_Final")
+
+DF_IDP_Por_Setor_Control_Final <- na.omit(DF_IDP_Por_Setor_Control_Final)
+
+# Organiza o df por ordem alfabética
+DF_IDP_Por_Setor_Control_Final <- arrange_all(DF_IDP_Por_Setor_Control_Final)
+
+
+# Baixa a Planilha
+httr::GET("https://www.bcb.gov.br/content/estatisticas/Documents/Tabelas_especiais/InterciaPassivop.xls",
+          config = httr::config(ssl_verifypeer = F),          
+          httr::write_disk(here::here("data-raw", "InterciaPassivop.xls"), overwrite = T))
+
+
+# Carrega a página da planilha
+Inter_Passivo_Ingressos <- read_excel("data-raw/InterciaPassivop.xls", 
+                               sheet = "Ingressos por país", skip = 4, 
+                               col_types = c("text", "numeric", "numeric", 
+                                             "numeric", "numeric", "numeric", 
+                                             "numeric", "numeric", "numeric", "numeric", 
+                                             "numeric", "numeric", "numeric")
+)
+
+Inter_Passivo_Ingressos <- rename(Inter_Passivo_Ingressos, "Pais" = "Discriminação")
+
+# Lista com os anos
+anos <- c("2010", "2011", "2012", "2013", "2014", "2015",
+          "2016", "2017", "2018", "2019", "2020")
+
+#Filtra as páginas do df
+DF_Inter_Passivo_Ingressos <- Inter_Passivo_Ingressos %>%
+  select("Pais", anos)%>%
+  pivot_longer(cols = anos, names_to = "Ano", values_to = "Inter_Passivo_Ingressos")
+
+DF_Inter_Passivo_Ingressos <- na.omit(DF_Inter_Passivo_Ingressos)
+DF_Inter_Passivo_Ingressos <- arrange_all(DF_Inter_Passivo_Ingressos)
+
+
+Inter_Passivo_Amortizacoes <- read_excel("data-raw/InterciaPassivop.xls",
+                      sheet = "Amortizações por país", skip = 4,
+                      col_types = c("text", "numeric", "numeric", 
+                                    "numeric", "numeric", "numeric", 
+                                    "numeric", "numeric", "numeric", "numeric", 
+                                    "numeric", "numeric", "numeric"))
+
+Inter_Passivo_Amortizacoes <- rename(Inter_Passivo_Amortizacoes, "Pais" = "Discriminação")
+
+DF_Inter_Passivo_Amortizacoes <- Inter_Passivo_Amortizacoes %>%
+  select("Pais", anos)%>%
+  pivot_longer(cols = anos, names_to = "Ano", values_to = "Inter_Passivo_Amortizacoes")
+
+DF_Inter_Passivo_Amortizacoes <- na.omit(DF_Inter_Passivo_Amortizacoes)
+DF_Inter_Passivo_Amortizacoes <- arrange_all(DF_Inter_Passivo_Amortizacoes)
+
+
+DF_Geral <- full_join(DF_Geral,DF_Inter_Passivo_Ingressos, by = c("Pais", "Ano"))
+DF_Geral <- full_join(DF_Geral,DF_Inter_Passivo_Amortizacoes, by = c("Pais", "Ano"))
+
+#//////////////////////////////////////////////testes///////////////////////////////////////////////////////////////////
+
+
+DF_Geral$Inter_Passivo_Amortizacoes[is.na(DF_Geral$Inter_Passivo_Amortizacoes)] <- 0
+
+DF_Geral$Inter_Passivo_Ingressos[is.na(DF_Geral$Inter_Passivo_Ingressos)] <- 0
+
+DF_Geral <- mutate(DF_Geral, Fluxo_Liquido = Inter_Passivo_Ingressos - Inter_Passivo_Amortizacoes)
+#////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+# Baixa a Planilha
+httr::GET("https://www.bcb.gov.br/content/estatisticas/Documents/Tabelas_especiais/InvBrap.xls",
+          config = httr::config(ssl_verifypeer = F),
+          httr::write_disk(here::here("data-raw", "InvBrap.xls"), overwrite = T))
+
+# Carrega a página da planilha
+IDE_Fluxo_Invest_Imediato <- read_xls("data-raw/InvBrap.xls",
+                      sheet = "IDE saídas por país", skip = 4,
+                      col_types = c("text", 
+                                    "numeric", "numeric", "numeric", "numeric", 
+                                    "numeric", "numeric", "numeric", "numeric", 
+                                    "numeric", "numeric", "numeric", "numeric", "numeric", 
+                                    "numeric", "numeric", "numeric")
+)
+
+IDE_Fluxo_Invest_Imediato <- rename(IDE_Fluxo_Invest_Imediato, "Pais" = "Discriminação")
+
+# Lista com os anos
+anos <- c("2010", "2011", "2012", "2013", "2014", "2015",
+          "2016", "2017", "2018", "2019", "2020")
+
+#Filtra as páginas do df
+DF_IDE_Fluxo_Invest_Imediato <- IDE_Fluxo_Invest_Imediato %>%
+  select("Pais", anos)%>%
+  pivot_longer(cols = anos, names_to = "Ano", values_to = "IDE_Fluxo_Invest_Imediato")
+
+DF_IDE_Fluxo_Invest_Imediato <- na.omit(DF_IDE_Fluxo_Invest_Imediato)
+DF_IDE_Fluxo_Invest_Imediato <- arrange_all(DF_IDE_Fluxo_Invest_Imediato)
+
+DF_Geral <- full_join(DF_Geral,DF_IDE_Fluxo_Invest_Imediato, by = c("Pais", "Ano"))
+
+# Baixa a Planilha
+httr::GET("https://www.bcb.gov.br/content/estatisticas/Documents/Tabelas_especiais/InvEstrp.xls",
+          config = httr::config(ssl_verifypeer = F),
+          httr::write_disk(here::here("data-raw", "InvEstrp.xls"), overwrite = T))
+
+# Carrega a página da planilha
+InvEstrp_fluxo_Invest <- read_xls("data-raw/InvEstrp.xls",
+                      sheet = "IDP ingresso por país", skip = 4, col_types = c("text", 
+                                                                               "numeric", "numeric", "numeric", 
+                                                                               "numeric", "numeric", "numeric", 
+                                                                               "numeric", "numeric", "numeric", 
+                                                                               "numeric", "numeric", "numeric", 
+                                                                               "numeric", "numeric", "numeric", 
+                                                                               "numeric", "numeric", "numeric", 
+                                                                               "numeric", "numeric", "numeric")
+)
+
+InvEstrp_fluxo_Invest <- rename(InvEstrp_fluxo_Invest, "Pais" = "Discriminação")
+# Lista com os anos
+anos <- c("2010", "2011", "2012", "2013", "2014", "2015",
+          "2016", "2017", "2018", "2019", "2020")
+
+#Filtra as páginas do df
+DF_InvEstrp_fluxo_Invest <- InvEstrp_fluxo_Invest %>%
+  select("Pais", anos)%>%
+  pivot_longer(cols = anos, names_to = "Ano", values_to = "value")
+
+DF_InvEstrp_fluxo_Invest <- na.omit(DF_InvEstrp_fluxo_Invest)
+DF_InvEstrp_fluxo_Invest <- arrange_all(DF_InvEstrp_fluxo_Invest)
+
+DF_Geral <- full_join(DF_Geral,DF_InvEstrp_fluxo_Invest, by = c("Pais", "Ano"))
+DF_Geral <- rename(DF_Geral, "InvEstrp_fluxo_Invest" = "value")
+
+```
+
+\newpage
+
+# Investimentos da `r país` no Brasil
+
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8,warning = FALSE , message = FALSE}
+
+df_grafico0<- DF_Geral %>%
+  select(Pais, Ano, b = "IDP_Invest_Imediato", c = "IDP_Control_Final", d = "IDP_Oper_Intercomp", e = "InvEstrp_fluxo_Invest", f = "Inter_Passivo_Ingressos", g = "Inter_Passivo_Amortizacoes")%>%
+  filter(Pais == país)%>%
+  mutate( Ano = as.numeric(Ano),
+          b = as.numeric(b),
+          c = as.numeric(c),
+          d = as.numeric(d),
+          e = as.numeric(e),
+          f = as.numeric(f),
+          g = as.numeric(g), 
+          h = f - g)
+
+qanos <- nrow(df_grafico0)
+
+ggplot(df_grafico0, aes(x = Ano ))+
+  geom_bar(stat = "identity", aes(y = c, fill = "IDP - Participação no Capital (Controlador Final)"), position = position_nudge(x = -.20), width = .2)+
+  geom_bar(stat = "identity", aes(y = d, fill = "IDP - Operações Intercompanhia"), position = position_nudge(x = -0), width = .2)+
+  geom_bar(stat = "identity", aes(y = b, fill = "IDP - Participação no Capital (Invest. Imediato)"), position = position_nudge(x = .20), width = .2)+
+  geom_line(aes(y = e*3, color = "Fluxo - Participação no Capital (Invest. Imediato)"), size = 1, linetype = 1) +
+  geom_line(aes(y = h*3, color = "Fluxo Líquido - Operações Intercompanhia"), size = 1, linetype = 1) +
+  scale_y_continuous("US$ milhões", sec.axis = sec_axis(~ . /3 ))+
+  scale_x_yearmon(NULL, format = "%Y", n = qanos)+
+  scale_color_manual(NULL, values = saturation(c("#BF1B0B","#38170B","#252A52","#FFC465","#66ADE5"), scalefac(0.8)))+
+  scale_fill_manual(NULL, values = saturation(c("#252A52","#FFC465","#66ADE5","#BF1B0B","#38170B"), scalefac(0.8)))+
+  theme_classic ()+
+  theme(panel.grid = element_blank(), # remove as linhas do corpo do gráfico
+        # sem bordas entre os painéis
+        panel.spacing = unit(0, "cm"),
+        # modifica o texto dos eixos
+        axis.text = element_text(size = 12, colour = "black"),
+        # cor dos marcadores
+        axis.ticks = element_line(colour = "black"),
+        # tamanho dos marcadores
+        axis.ticks.length = unit(.2, "cm"), 
+        #cor da borda
+        panel.border = element_rect(colour = "black", fill = NA, size = 0.5),
+        axis.text.x = element_text(angle = 0, hjust = 0.5),
+        legend.position="bottom", legend.box = "vertical") 
+  
+
+```
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8,warning = FALSE , message = FALSE}
+kableExtra::kable(df_grafico0, format = "markdown", align = "lccccccccccc", digits = 2)
+```
+
+\newpage
+
+# Setor de Atividade Econômica (Estoque 2020 - US$ milhões)
+
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8, message=FALSE,warning = FALSE}
+
+
+AA <- DF_IDP_Por_Setor_Control_Final %>%
+  pivot_wider(names_from = "ANO: 2020", values_from = "IDP_Setor_Control_Final") %>%
+  filter(Pais == país)%>%
+  group_by("ANO: 2020",Pais ) %>% 
+  mutate_all(coalesce, 0)
+
+AA<-AA %>%
+  select(Pais, b = "B - Indústrias Extrativas", c = "G - Comércio, Reparação de Veículos Automotores e Motocicletas",
+         d = "D - Eletricidade e Gás", e = "C - Indústrias de Transformação",
+         f = "K - Atividades Financeiras, de Seguros e Serviços Relacionados", g = "H - Transporte, Armazenagem e Correio",
+         h = "Total país em US$ milhões")%>%
+  mutate( "Indústrias Extrativas" = b*100/h,
+          "Comércio, Reparação de Veículos Automotores e Motocicletas" = c*100/h,
+          "Eletricidade e Gás" = d*100/h,
+          "Indústrias de Transformação" = e*100/h,
+          "Atividades Financeiras, de Seguros e Serviços Relacionados" = f*100/h,
+          "Transporte, Armazenagem e Correio" = g*100/h,
+          "Outros" = (h-b-c-d-e-f-g)*100/h)%>%
+  pivot_longer(cols = c("Indústrias Extrativas":"Outros"), names_to = "Setor", values_to = "value")
+
+fair_cols <- c("#BF1B0B", "#FFC465", "#66ADE5", "#252A52","#8FBC8F", "#D2691E", "#B0C4DE")
+  
+
+AA %>%
+  ggplot(aes(x="", y = value, fill= Setor), label = value)+
+    geom_bar(stat = "identity")+
+    coord_polar(theta = "y", start = 0)+
+    theme_void()+
+    scale_fill_manual(values = saturation(fair_cols, scalefac(0.8)))+
+    geom_label(label = paste(round(AA$value,2),"%"), show.legend = F, size = 5, aes(label = y), position =  position_stack(vjust = 0.5))
+
+
+
+```
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8,warning = FALSE , message = FALSE}
+kableExtra::kable(df_grafico0, format = "markdown", align = "lcc", digits = 2)
+```
+
+
+\newpage
+
+# Investimentos do Brasil na `r país` 
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8,warning = FALSE , message = FALSE}
+df_grafico1<- DF_Geral %>%
+  select(Pais, Ano, b = "IDE_Invest_Imediato", c = "IDE_Oper_Intercomp", d = "IDE_Fluxo_Invest_Imediato")%>%
+  filter(Pais == país)%>%
+  mutate( Ano = as.numeric(Ano),
+          b = as.numeric(b),
+          c = as.numeric(c),
+          d = as.numeric(d))
+
+qanos<- nrow(df_grafico1)
+
+ggplot(df_grafico1, aes(x = Ano, y = b & c & d )) +
+      geom_bar(stat = "identity", aes(y = b, fill = "IBD - Participação no Capital (Invest. Imediato)" ), position = position_nudge(x = -.15), width = .3)+
+      geom_bar(stat = "identity", aes(y = c, fill = "IBD - Operações Intercompanhia"  ), position = position_nudge(x = .15), width = .3) +
+      geom_line(aes(y = d*10, colour = "Fluxo - Participação no Capital (Invest. Imeadiato)"), size = 1, linetype = 1) +
+      scale_y_continuous("US$ milhões", sec.axis = sec_axis(~ . /10 ))+
+      scale_x_yearmon(NULL, format = "%Y", n = qanos)+
+      scale_color_manual(NULL, values = saturation(c("#BF1B0B","#252A52","#FFC465"), scalefac(0.8)))+
+      scale_fill_manual(NULL, values = saturation(c("#252A52","#FFC465","#BF1B0B"), scalefac(0.8)))+
+      theme_classic ()+
+      theme(panel.grid = element_blank(), # remove as linhas do corpo do gráfico
+          # sem bordas entre os painéis
+          panel.spacing = unit(0, "cm"),
+          # modifica o texto dos eixos
+          axis.text = element_text(size = 12, colour = "black"),
+          # cor dos marcadores
+          axis.ticks = element_line(colour = "black"),
+          # tamanho dos marcadores
+          axis.ticks.length = unit(.2, "cm"), 
+          #cor da borda
+          panel.border = element_rect(colour = "black", fill = NA, size = 0.5),
+          axis.text.x = element_text(angle = 0, hjust = 0.5),
+          legend.position="bottom", legend.box = "vertical") 
+
+
+```
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8,warning = FALSE , message = FALSE}
+kableExtra::kable(df_grafico0, format = "markdown", align = "lccccccccccc", digits = 2)
+```
+
+
+\newpage
+
+# Investimento em Carteira
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8,warning = FALSE , message = FALSE}
+df_grafico2<- DF_Geral %>%
+    select(Pais, Ano, b = "IDE_Acoes")%>%
+    filter(Pais == país)%>%
+    mutate( Ano = as.numeric(Ano),
+            b = as.numeric(b))
+  
+qanos<- nrow(df_grafico2)
+  
+ggplot(df_grafico2, aes(x = Ano, y = b)) +
+    geom_bar(stat = "identity", aes(y = b, fill = "Ações" ), width = .5)+
+    scale_y_continuous("US$ milhões")+
+    scale_x_yearmon(NULL, format = "%Y", n = qanos)+
+    scale_fill_manual(NULL, values = saturation(c("#252A52","#FFC465","#BF1B0B"), scalefac(0.8)))+
+    theme_classic ()+
+    theme(panel.grid = element_blank(), # remove as linhas do corpo do gráfico
+          # sem bordas entre os painéis
+          panel.spacing = unit(0, "cm"),
+          # modifica o texto dos eixos
+          axis.text = element_text(size = 12, colour = "black"),
+          # cor dos marcadores
+          axis.ticks = element_line(colour = "black"),
+          # tamanho dos marcadores
+          axis.ticks.length = unit(.2, "cm"), 
+          #cor da borda
+          panel.border = element_rect(colour = "black", fill = NA, size = 0.5),
+          axis.text.x = element_text(angle = 0, hjust = 0.5),
+          legend.position="bottom", legend.box = "vertical")   
+  
+
+```
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8,warning = FALSE , message = FALSE}
+kableExtra::kable(df_grafico0, format = "markdown", align = "lccccccccccc", digits = 2)
+```
+
+
+\newpage
+
+# Outros Investimentos
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8, message=FALSE,warning = FALSE}
+
+df_grafico3<- DF_Geral %>%
+  select(Pais, Ano, b = "IDE_Moedas", c = "IDE_Imoveis")%>%
+  filter(Pais == país)%>%
+  mutate( Ano = as.numeric(Ano),
+          b = as.numeric(b),
+          c = as.numeric(c))
+
+qanos<- nrow(df_grafico3)
+
+ggplot(df_grafico3, aes(x = Ano, y = b & c )) +
+  geom_bar(stat = "identity", aes(y = b, fill = "Moedas/Depósitos" ), position = position_nudge(x = -.15), width = .3)+
+  geom_bar(stat = "identity", aes(y = c, fill = "Imóveis"  ), position = position_nudge(x = .15), width = .3) +
+  scale_y_continuous("US$ milhões")+
+  scale_x_yearmon(NULL, format = "%Y", n = qanos)+
+  scale_fill_manual(NULL, values = saturation(c("#252A52","#FFC465","#BF1B0B"), scalefac(0.8)))+
+  theme_classic ()+
+  theme(panel.grid = element_blank(), # remove as linhas do corpo do gráfico
+        # sem bordas entre os painéis
+        panel.spacing = unit(0, "cm"),
+        # modifica o texto dos eixos
+        axis.text = element_text(size = 12, colour = "black"),
+        # cor dos marcadores
+        axis.ticks = element_line(colour = "black"),
+        # tamanho dos marcadores
+        axis.ticks.length = unit(.2, "cm"), 
+        #cor da borda
+        panel.border = element_rect(colour = "black", fill = NA, size = 0.5),
+        axis.text.x = element_text(angle = 0, hjust = 0.5),
+        legend.position="bottom", legend.box = "vertical") 
+
+```
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8,warning = FALSE , message = FALSE}
+kableExtra::kable(df_grafico0, format = "markdown", align = "lccccccccccc", digits = 2)
+```
+
+\newpage
+
+# IBD - Setor de Atividade Econômica (2020 - US$ milhões)
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8, message=FALSE,warning = FALSE}
+
+DF_IDE_Por_Setor<- DF_IDE_Por_Setor %>%
+  mutate( IDE_Por_Setor = as.numeric(IDE_Por_Setor))
+
+BB <- DF_IDE_Por_Setor %>%
+  pivot_wider(names_from = "ANO: 2020", values_from = "IDE_Por_Setor") %>%
+  filter(Pais == país)%>%
+  group_by("ANO: 2020",Pais ) %>% 
+  mutate_all(coalesce, 0)
+
+BB<-BB %>%
+  select(Pais, b = "L - Atividades Imobiliárias", c = "G - Comércio, Reparação de Veículos Automotores e Motocicletas",
+         d = "N - Atividades Administrativas e Serviços Complementares", e = "C - Indústrias de Transformação",
+         f = "K - Atividades Financeiras, de Seguros e Serviços Relacionados", h = "Total país em US$ milhões")%>%
+  mutate( "Atividades Imobiliárias" = b*100/h,
+          "Comércio, Reparação de Veículos Automotores e Motocicletas" = c*100/h,
+          "Atividades Adiministrativas e Serviços Complementares" = d*100/h,
+          "Indústrias de Transformação" = e*100/h,
+          "Atividades Financeiras, de Seguros e Serviços Relacionados" = f*100/h,
+          "Outros" = (h-b-c-d-e-f)*100/h)%>%
+  pivot_longer(cols = c("Atividades Imobiliárias":"Outros"), names_to = "Setor", values_to = "value")
+
+
+BB %>%
+  ggplot(aes(x="", y = value, fill= Setor), label = value)+
+  geom_bar(stat = "identity")+
+  coord_polar(theta = "y", start = 0)+
+  theme_void()+
+  scale_fill_manual(values = saturation(fair_cols, scalefac(0.8)))+
+  geom_label_repel(label = paste(round(BB$value,2),"%"), show.legend = F, size = 5, position =  position_stack(vjust = 0.5))
+
+
+
+
+```
+
+```{r, echo=FALSE,fig.width=10, fig.height=5.8,warning = FALSE , message = FALSE}
+kableExtra::kable(df_grafico0, format = "markdown", align = "lc", digits = 2)
+```
+
+
+
+
+
