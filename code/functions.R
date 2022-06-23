@@ -9,6 +9,22 @@ selecionarPais <- function(dataFrame){
   
 }
 
+ler_excel <- function(planName, sht, skp){
+  read_excel(planName,
+             sheet = sht, skip = skp)
+}
+
+
+
+turn_numeric <- function(planName, len){
+  planName %>% mutate(dplyr::across(.cols=2:len, .fns=as.numeric))
+}
+
+
+
+renomear_disc <- function(dataframe){
+  rename(dataframe, "Pais" = "Discriminação")
+}
 
 ler_linha <- function(nomePlan){
    nomePlan %>%
@@ -24,104 +40,93 @@ soma_linhas <- function(nlinha){
       pivot_wider(names_from = anos, values_from = soma)
 }
 
-leitura_planilha <- function(planName, sht, skp){
-  if(length(col_types) == 23){
-    read_xlsx(planName,
-              sheet = sht, skip = skp, col_types = c("text", "numeric","numeric", "numeric", "numeric",
-                                                     "numeric", "numeric", "numeric", "numeric", "numeric",
-                                                     "numeric", "numeric", "numeric", "numeric", "numeric",
-                                                     "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                     "numeric", "numeric", "numeric"))
-    
-  } else if(length(col_types) == 36){
-    read_xlsx(planName, 
-              sheet = sht, skip = skp, col_types = c("text", "numeric", "numeric", "numeric", "numeric", 
-                                                     "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                     "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                     "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                     "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                     "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                     "numeric", "numeric", "numeric", "numeric", 
-                                                     "numeric", "numeric"))
-  }
+
+
+  criar_tabela <- function(tabela, names){
+  tabela$names <- names
+  tabela <- tabela %>%
+    select(names, anos)
+}
+
+
+
+setores <- function(nomePlan){
+  nomePlan <- nomePlan[c(4,5,6,8,9,12), -2]
+  nomePlan <- turn_numeric(nomePlan,35)
+  nomePlan <- nomePlan %>%
+    pivot_longer(cols = 2:35, names_to = "Pais", values_to = "valor")
+  nomePlan[is.na(nomePlan)] <- 0
+  
+  
+  
+  nomePlan <- nomePlan%>%
+    filter(Pais %in% pais)
+  nomePlan <- nomePlan %>%
+    pivot_wider(names_from = Pais,values_from = valor)
+  
+}
+
+setores_final <- function(nomePlan, nomeTeste){
+  colnames(nomePlan)[1] <- "Setores"
+  nomeTeste <- nomePlan %>% select(2:5)
+  nomeTeste <- nomeTeste%>%
+    mutate(Valores = rowSums(.))
+  nomePlan <- nomePlan[ , 1]
+  nomeTeste <- nomeTeste[ , 5]
+  nomePlan <- bind_cols(nomePlan, nomeTeste)
   
 }
 
 
-
-
-ler_IDP_aba_5_7 <- function(planName, sht, skp){
-  
-  return (read_xlsx(planName,
-                    sheet = sht, skip = skp, col_types = c("text", "numeric", 
-                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                           "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                           "numeric") ) 
-  )
+criar_linha <- function(nomelinha, nomeTab,lin){
+  nomeTab <- select (nomeTab,-c("names","2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018","2019"))
+  linhas <- c(lin)
+  nomelinha <- nomelinha[linhas,]
   
 }
 
-
-
-ler_IPD_aba_13 <- function (planName, sht, rng) 
-{
-  return (read_xlsx(planName, sheet = sht, range = rng, col_types = c("text", "numeric", 
-                                                                      "numeric", "numeric", "numeric", "numeric", 
-                                                                      "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                                      "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                                      "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                                      "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                                      "numeric", "numeric", "numeric", "numeric", "numeric", 
-                                                                      "numeric", "numeric", "numeric", "numeric", "numeric"))
-  )
-}  
-
-renomear_disc <- function(dataframe){
-  rename(dataframe, "Pais" = "Discriminação")
-}
-
-
-
-leitura_Estrp <- function(planName, sht, skp){
-  read_xls(planName,
-           sheet = sht , skip = skp, col_types = c("text", 
-                                                   "numeric", "numeric", "numeric",
-                                                   "numeric", "numeric", "numeric",
-                                                   "numeric", "numeric", "numeric",
-                                                   "numeric", "numeric", "numeric",
-                                                   "numeric", "numeric", "numeric",
-                                                   "numeric", "numeric", "numeric",
-                                                   "numeric", "numeric", "numeric"))
+IDP_Qtd_Invest <- function(nomePlan, ano){ 
+  nomePlan %>%
+    rename("Pais" = "Discriminação") %>%
+    select(Pais, all_of(ano)) %>%
+    filter(Pais %in% pais) %>%
+    na.omit() %>%
+    arrange_all() %>%
+    mutate(dplyr::across(.cols=2:3, .fns=as.numeric))
   
 }
 
-leitura_InterciaPassivo <- function(planName, sht, skp){
-  read_xls(planName, 
-           sheet = sht, skip = skp, col_types = c(c("text", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric", "numeric", 
-                                                    "numeric", "numeric", "numeric")))
+soma_Qtd_Invest <- function(nlinha,len, ano){
+  nlinha[is.na(nlinha)] <- 0
+  soma <- apply(nlinha[,2:len], 2, FUN=sum)
+  def <- data_frame(ano, soma)
+  def <- def %>%
+    pivot_wider(names_from = ano, values_from = soma)
 }
 
-leitura_IDE <- function(planName, sht, skp){
-  read_excel("data-raw/TabelasCompletasPosicaoIDE.xlsx",
-             sheet = sht, skip = skp, col_types = c(c("text", "numeric", "numeric",
-                                                   "numeric", "numeric", "numeric",
-                                                   "numeric", "numeric", "numeric", 
-                                                   "numeric", "numeric", "numeric", 
-                                                   "numeric", "numeric", "numeric", 
-                                                   "numeric", "numeric", "numeric",
-                                                   "numeric", "numeric", "numeric", 
-                                                   "numeric", "numeric", "numeric",
-                                                   "numeric", "numeric", "numeric",
-                                                   "numeric", "numeric")))
-}
-
-leitura_IDE_2020 <- function(planName, sht, skp){
-  read_excel("data-raw/TabelasCompletasPosicaoIDE.xlsx",
-             sheet = sht, skip = skp, col_types = c(c("text", "numeric", "numeric")))
-}
-
+outros_func<- function(df_por_setor, plan3_reference){
+  outros <- apply(df_por_setor[,2], 2, FUN=sum)
+  outros <- data.frame(outros)
+  outros2 <- plan3_reference$`2020`
+  outros2 <- data.frame(outros2)
+  outros <- outros2 - outros
   
+  outros$setor_outros <- c("Outros")
+  outros <- outros %>%
+    select(setor_outros, outros2)
+}
+
+setores_idb <- function(nomePlan){
+  nomePlan <- nomePlan[c(13,8,12,5,15), -2]
+  nomePlan <- turn_numeric(nomePlan,77)
+  nomePlan <- nomePlan %>%
+    pivot_longer(cols = 2:77, names_to = "Pais", values_to = "valor")
+  nomePlan[is.na(nomePlan)] <- 0
+
+  nomePlan <- nomePlan%>%
+    filter(Pais %in% pais)
+  nomePlan <- nomePlan %>%
+    pivot_wider(names_from = Pais,values_from = valor)
+  
+}
+
