@@ -66,14 +66,16 @@ setores <- function(nomePlan){
   
 }
 
-setores_final <- function(nomePlan, nomeTeste){
+setores_final <- function(nomePlan, placeholder){
   colnames(nomePlan)[1] <- "Setores"
-  nomeTeste <- nomePlan %>% select(2:5)
-  nomeTeste <- nomeTeste%>%
-    mutate(Valores = rowSums(.))
+  n <- ncol(nomePlan)
+  placeholder <- nomePlan %>% select(2:all_of(n))
+  placeholder <- placeholder%>%
+    mutate(Valores = rowSums(placeholder))
+  n <- ncol(placeholder)
   nomePlan <- nomePlan[ , 1]
-  nomeTeste <- nomeTeste[ , 5]
-  nomePlan <- bind_cols(nomePlan, nomeTeste)
+  placeholder <- placeholder[ , n]
+  nomePlan <- bind_cols(nomePlan, placeholder)
   
 }
 
