@@ -1,6 +1,9 @@
 ---
 title: "Investimentos Brasil -  "
-author: "Secretaria de Comércio Exterior e Assuntos Econômicos (SCAEC)"
+author: 
+- "Secretaria de Comércio Exterior e Assuntos Econômicos(SCAEC)"
+- "Núcleo de Inteligência Econômica(NIE)"
+- "Dados: Banco Central do Brasil"
 date: " `r format(Sys.time(), '%d/%m/%Y')` " 
 output: 
   pdf_document:
@@ -216,7 +219,7 @@ title: "Investimentos Brasil - `r pais_titulo`"
 --- 
 
 
-```{r, echo=FALSE, message=FALSE, warning = FALSE}
+```{r, echo=FALSE, message=FALSE, warning = FALSE, include = FALSE}
 
   pais <- c("Rússia", "Índia", "China", "África do Sul")
 
