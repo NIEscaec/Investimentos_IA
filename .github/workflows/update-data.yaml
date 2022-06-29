@@ -38,7 +38,7 @@ jobs:
 
       - name: Execute Script
         run: |
-          source('Data-frames/novo_cod')
+          source('code/opt_code.R')
         shell: Rscript {0}
 
       - name: Commit results
