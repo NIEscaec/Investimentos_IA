@@ -26,10 +26,11 @@ renomear_disc <- function(dataframe){
   rename(dataframe, "Pais" = "Discriminação")
 }
 
-ler_linha <- function(nomePlan){
+ler_linha <- function(nomePlan, len){
    nomePlan %>%
     renomear_disc() %>%
-    selecionarPais()
+    selecionarPais() %>%
+    mutate(dplyr::across(.cols=2:len, .fns=as.numeric))
 }
 
 soma_linhas <- function(nlinha){
