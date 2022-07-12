@@ -14,10 +14,26 @@ library(tidyr)
 
 pais <- c("Alemanha","China", "Chile","Panamá", "Mônaco", "Maurício", "Panamá")
 
-# Baixa a Planilha
+# Baixa as Planilhas
 httr::GET("https://www.bcb.gov.br/content/estatisticas/Documents/Tabelas_especiais/TabelasCompletasPosicaoIDP.xlsx",
           config = httr::config(ssl_verifypeer = F),
           httr::write_disk(here::here("data-raw", "TabelasCompletasPosicaoIDP.xlsx"), overwrite = T))
+
+httr::GET("https://www.bcb.gov.br/content/estatisticas/Documents/Tabelas_especiais/TabelasCompletasPosicaoIDE.xlsx",
+          config = httr::config(ssl_verifypeer = F),
+          httr::write_disk(here::here("data-raw", "TabelasCompletasPosicaoIDE.xlsx"), overwrite = T))
+
+httr::GET("https://www.bcb.gov.br/content/estatisticas/Documents/Tabelas_especiais/InterciaPassivop.xls",
+          config = httr::config(ssl_verifypeer = F),
+          httr::write_disk(here::here("data-raw", "InterciaPassivop.xls"), overwrite = T))
+
+httr::GET("https://www.bcb.gov.br/content/estatisticas/Documents/Tabelas_especiais/InvBrap.xls",
+          config = httr::config(ssl_verifypeer = F),
+          httr::write_disk(here::here("data-raw", "InvBrap.xls"), overwrite = T))
+
+httr::GET("https://www.bcb.gov.br/content/estatisticas/Documents/Tabelas_especiais/InvEstrp.xls",
+          config = httr::config(ssl_verifypeer = F),
+          httr::write_disk(here::here("data-raw", "InvEstrp.xls"), overwrite = T))
 
 # Carrega a página 5 da Planilha IDP
 Invest_Imediato_IDP <- ler_excel("data-raw/TabelasCompletasPosicaoIDP.xlsx", "5", 4)
@@ -77,10 +93,6 @@ Tabela_1 <- criar_tabela(Tabela_1, setores_tab1)
 
 #-------------------------------------------------------------- Tabela 2 ---------------------------------------------------------------
 #------------------------------------------------Cria a primeira segunda da tabela referente a Plan 3-----------------------------------
-
-httr::GET("https://www.bcb.gov.br/content/estatisticas/Documents/Tabelas_especiais/TabelasCompletasPosicaoIDE.xlsx",
-          config = httr::config(ssl_verifypeer = F),
-          httr::write_disk(here::here("data-raw", "TabelasCompletasPosicaoIDE.xlsx"), overwrite = T))
 
 # Carrega a página 3 da Planilha IDE
 Invest_Imediato_IDE <- ler_excel("data-raw/TabelasCompletasPosicaoIDE.xlsx", "3", 4)
